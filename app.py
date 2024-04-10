@@ -41,20 +41,19 @@ class ImageConverterApp:
                 try:
                     image = Image.open(self.file_path)
 
-                    # Удаление метаданных EXIF
+                    # Проверяем ориентацию изображения и применяем соответствующее преобразование
                     if hasattr(image, '_getexif'):
                         exif_data = image._getexif()
                         if exif_data:
-                            exif_copy = exif_data.copy()  # Создаем копию словаря, чтобы избежать ошибки "dictionary changed size during iteration"
-                            for tag, value in exif_copy.items():
-                                decoded = ExifTags.TAGS.get(tag, tag)
-                                if decoded == 'Orientation':
-                                    del exif_data[tag]
-                            image.save(output_path, 'WEBP', quality=quality, exif=image.info.get('exif'))
-                        else:
-                            image.save(output_path, 'WEBP', quality=quality)
-                    else:
-                        image.save(output_path, 'WEBP', quality=quality)
+                            orientation = exif_data.get(0x0112)
+                            if orientation == 3:
+                                image = image.rotate(180, expand=True)
+                            elif orientation == 6:
+                                image = image.rotate(270, expand=True)
+                            elif orientation == 8:
+                                image = image.rotate(90, expand=True)
+
+                    image.save(output_path, 'WEBP', quality=quality)
 
                     messagebox.showinfo("Готово", "Изображение успешно сконвертировано в формат WebP!")
                 except Exception as e:
